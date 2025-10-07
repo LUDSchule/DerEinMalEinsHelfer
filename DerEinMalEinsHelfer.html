@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1x1 Visualisierung</title>
+    <style>
+        /* *** CSS (Design) *** */
+
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0; 
+            padding: 20px;
+        }
+
+        header {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #fff;
+            width: 90%;
+            max-width: 550px; 
+        }
+
+        .counter-display {
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            font-size: 0.9em;
+            font-weight: normal;
+            color: #555;
+            margin-top: 10px;
+        }
+        .result-toggle {
+            display: flex;
+            align-items: center;
+        }
+
+        .counter-controls button {
+            padding: 15px 25px;
+            font-size: 1.2em;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+            touch-action: manipulation;
+        }
+
+        .counter-controls button:first-child {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .counter-controls .reset-button {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        /* Haupt-Layout für die Visualisierung */
+        .main-container {
+            width: 90%;
+            max-width: 550px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 1er-Reihe (oben) */
+        #ones-row {
+            display: grid;
+            grid-template-columns: 20px repeat(10, 1fr); /* Platzhalter links + 10 Spalten */
+            width: 100%;
+            height: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 5px;
+            visibility: hidden; /* Standardmäßig versteckt */
+        }
+        .one-result-placeholder {
+            width: 100%; 
+            height: 100%;
+        }
+        .one-result {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+
+        /* Gitter und 10er-Spalte */
+        .grid-and-tens {
+            display: flex;
+            align-items: stretch; 
+            width: 100%;
+        }
+
+        /* 10er-Spalte (links) */
+        #tens-column {
+            display: grid; 
+            grid-template-rows: repeat(10, 1fr); /* 10 Reihen, jede gleich hoch */
+            width: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: #666;
+            margin-right: 5px;
+            visibility: hidden; 
+        }
+        .ten-result {
+            display: flex;
+            align-items: center; /* Vertikal zentriert */
+            justify-content: flex-end; /* Rechtsbündig im 20px-Feld */
+            padding-right: 2px;
+            height: 100%; /* Füllt die Grid-Zelle */
+        }
+
+
+        /* Gitter-Design */
+        #grid-container {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            flex-grow: 1; 
+            aspect-ratio: 1 / 1;
+            border: 5px solid #666;
+            background-color: #e0e0e0;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .kugel {
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            margin: 10%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.7em;
+            color: #333;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        /* Klasse, um Zahlen auszublenden */
+        .hide-number {
+            color: transparent !important;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>1x1 Visualisierer 🧠</h1>
+    </header>
+
+    <div class="controls">
+        <label for="reihe">Wähle die 1x1-Reihe:</label>
+        <select id="reihe" onchange="resetGrid()">
+            <option value="0">---</option>
+            <option value="1">1er-Reihe</option>
+            <option value="2">2er-Reihe</option>
+            <option value="3">3er-Reihe</option>
+            <option value="4">4er-Reihe</option>
+            <option value="5">5er-Reihe</option>
+            <option value="6">6er-Reihe</option>
+            <option value="7">7er-Reihe</option>
+            <option value="8">8er-Reihe</option>
+            <option value="9">9er-Reihe</option>
+            <option value="10">10er-Reihe</option>
+        </select>
+        
+        <div class="counter-display">
+            <span id="aufgabe-display">Aufgabe: C x R = ...</span>
+            
+            <div class="options">
+                <div class="result-toggle">
+                    <input type="checkbox" id="toggleResult" onchange="updateAufgabeDisplay()">
+                    <label for="toggleResult">Ergebnis anzeigen</label>
+                </div>
+                <div class="result-toggle">
+                    <input type="checkbox" id="toggleNumbers" onchange="toggleGridNumbers()" checked>
+                    <label for="toggleNumbers">Zahlen im Gitter anzeigen</label>
+                </div>
+                <div class="result-toggle">
+                    <input type="checkbox" id="toggleTens" onchange="toggleTensDisplay()">
+                    <label for="toggleTens">10er anzeigen</label>
+                </div>
+                <div class="result-toggle">
+                    <input type="checkbox" id="toggleOnes" onchange="toggleOnesDisplay()">
+                    <label for="toggleOnes">1er anzeigen</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="counter-controls">
+            <button onclick="incrementCounter()">➕ Nächster Schritt</button>
+            <button onclick="resetGrid()" class="reset-button">🔄 Reset</button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div id="ones-row">
+            </div>
+        <div class="grid-and-tens">
+            <div id="tens-column">
+                </div>
+            <div id="grid-container">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        /* *** JavaScript (Logik) *** */
+
+        const GRID_SIZE = 10;
+        let currentReihe = 0;
+        let currentCounter = 0;
+
+        // Farbpaare für maximalen Kontrast
+        const COLOR_PAIR_MAP = {
+            1: ['hsl(0, 90%, 35%)', 'hsl(30, 80%, 75%)'],   
+            2: ['hsl(30, 90%, 40%)', 'hsl(60, 80%, 70%)'],  
+            3: ['hsl(60, 90%, 30%)', 'hsl(90, 80%, 65%)'],  
+            4: ['hsl(120, 90%, 35%)', 'hsl(180, 80%, 75%)'],
+            5: ['hsl(180, 90%, 30%)', 'hsl(210, 80%, 70%)'],
+            6: ['hsl(240, 90%, 40%)', 'hsl(270, 80%, 75%)'],
+            7: ['hsl(270, 90%, 35%)', 'hsl(300, 80%, 70%)'],
+            8: ['hsl(300, 90%, 40%)', 'hsl(330, 80%, 75%)'],
+            9: ['hsl(20, 90%, 35%)', 'hsl(50, 80%, 70%)'],  
+            10: ['hsl(220, 40%, 40%)', 'hsl(220, 20%, 85%)']
+        };
+
+
+        // --- Gitter- und Spalten-Erstellung ---
+
+        /**
+         * Erstellt das 10x10 Gitter.
+         */
+        function createGrid() {
+            const container = document.getElementById('grid-container');
+            container.innerHTML = '';
+            for (let i = 1; i <= GRID_SIZE * GRID_SIZE; i++) {
+                const kugel = document.createElement('div');
+                kugel.classList.add('kugel');
+                kugel.id = 'kugel-' + i;
+                kugel.textContent = i;
+                container.appendChild(kugel);
+            }
+        }
+
+        /**
+         * Erstellt die Spalte mit den 10er-Ergebnissen (leer, 10, 20, ..., 90).
+         */
+        function createTensColumn() {
+            const column = document.getElementById('tens-column');
+            column.innerHTML = '';
+
+            // Erste Reihe (1-10) ist leer
+            let emptyDiv = document.createElement('div');
+            emptyDiv.classList.add('ten-result');
+            emptyDiv.textContent = '';
+            column.appendChild(emptyDiv);
+
+            // Reihen 2 bis 10 (Ergebnisse 10 bis 90)
+            for (let i = 1; i < GRID_SIZE; i++) {
+                const resultDiv = document.createElement('div');
+                resultDiv.classList.add('ten-result');
+                // Das Ergebnis entspricht 10 * i (z.B. i=1 -> 10, i=9 -> 90)
+                resultDiv.textContent = i * 10; 
+                column.appendChild(resultDiv);
+            }
+        }
+
+        /**
+         * Erstellt die Reihe mit den 1er-Ergebnissen (1, 2, ..., 10).
+         */
+        function createOnesRow() {
+            const row = document.getElementById('ones-row');
+            row.innerHTML = '';
+            
+            // 1. Leerer Platzhalter für die Ecke (links oben)
+            const placeholder = document.createElement('div');
+            placeholder.classList.add('one-result-placeholder');
+            row.appendChild(placeholder);
+
+            // 2. Die 10 Ergebnisse (1 bis 10)
+            for (let i = 1; i <= GRID_SIZE; i++) {
+                const resultDiv = document.createElement('div');
+                resultDiv.classList.add('one-result');
+                resultDiv.textContent = i;
+                row.appendChild(resultDiv);
+            }
+        }
+
+
+        // --- Farblogik und Zähler ---
+
+        /**
+         * Berechnet die Farbe (HSL) für einen bestimmten Multiplikatorschritt.
+         */
+        function calculateColor(reihe, step) {
+            const colorPair = COLOR_PAIR_MAP[reihe];
+            if (step % 2 !== 0) {
+                return colorPair[0];
+            } else {
+                return colorPair[1];
+            }
+        }
+
+        /**
+         * Setzt das Gitter zurück und wählt eine neue Reihe.
+         */
+        function resetGrid() {
+            currentReihe = parseInt(document.getElementById('reihe').value);
+            currentCounter = 0;
+            
+            for (let i = 1; i <= GRID_SIZE * GRID_SIZE; i++) {
+                const kugel = document.getElementById('kugel-' + i);
+                kugel.style.backgroundColor = '#f0f0f0';
+            }
+
+            toggleGridNumbers();
+            updateAufgabeDisplay();
+        }
+
+        /**
+         * Erhöht den Zähler und färbt die entsprechenden Kugeln ein.
+         */
+        function incrementCounter() {
+            if (currentReihe === 0) {
+                alert('Bitte wähle zuerst eine 1x1-Reihe aus!');
+                return;
+            }
+            
+            const nextResult = (currentCounter + 1) * currentReihe;
+
+            if (nextResult > GRID_SIZE * GRID_SIZE) {
+                alert('Der nächste Schritt (' + (currentCounter + 1) + ' x ' + currentReihe + ') liegt über 100 und kann nicht mehr dargestellt werden.');
+                return;
+            }
+
+            currentCounter++; 
+
+            const color = calculateColor(currentReihe, currentCounter);
+
+            const startNum = (currentCounter - 1) * currentReihe + 1;
+            const endNum = currentCounter * currentReihe;
+
+            for (let i = startNum; i <= endNum; i++) {
+                const kugel = document.getElementById('kugel-' + i);
+                if (kugel) {
+                    kugel.style.backgroundColor = color;
+                }
+            }
+
+            updateAufgabeDisplay();
+        }
+
+
+        // --- Toggle-Funktionen ---
+
+        /**
+         * Schaltet die Anzeige der Zahlen (1-100) in den Kugeln ein/aus.
+         */
+        function toggleGridNumbers() {
+            const showNumbers = document.getElementById('toggleNumbers').checked;
+            
+            for (let i = 1; i <= GRID_SIZE * GRID_SIZE; i++) {
+                const kugel = document.getElementById('kugel-' + i);
+                if (showNumbers) {
+                    kugel.classList.remove('hide-number');
+                } else {
+                    kugel.classList.add('hide-number');
+                }
+            }
+        }
+
+        /**
+         * Schaltet die Anzeige der 10er-Ergebnisse (leer, 10, 20, ...) ein/aus.
+         */
+        function toggleTensDisplay() {
+            const showTens = document.getElementById('toggleTens').checked;
+            const tensColumn = document.getElementById('tens-column');
+            
+            if (showTens) {
+                tensColumn.style.visibility = 'visible';
+            } else {
+                tensColumn.style.visibility = 'hidden';
+            }
+        }
+        
+        /**
+         * Schaltet die Anzeige der 1er-Ergebnisse (1, 2, ...) ein/aus.
+         */
+        function toggleOnesDisplay() {
+            const showOnes = document.getElementById('toggleOnes').checked;
+            const onesRow = document.getElementById('ones-row');
+            
+            if (showOnes) {
+                onesRow.style.visibility = 'visible';
+            } else {
+                onesRow.style.visibility = 'hidden';
+            }
+        }
+
+        /**
+         * Aktualisiert die Anzeige der Aufgabe (z.B. 2 x 7 = 14).
+         */
+        function updateAufgabeDisplay() {
+            const display = document.getElementById('aufgabe-display');
+            const showResult = document.getElementById('toggleResult').checked;
+            
+            let ergebnis = '...';
+
+            if (currentReihe === 0) {
+                display.textContent = 'Wähle eine Reihe!';
+                return;
+            }
+
+            if (currentCounter === 0) {
+                display.textContent = `${currentReihe}er-Reihe gewählt. Starte mit "+"`;
+                return;
+            }
+
+            if (showResult) {
+                ergebnis = currentCounter * currentReihe;
+            }
+
+            display.textContent = `${currentCounter} x ${currentReihe} = ${ergebnis}`;
+        }
+
+        // Initialisierung beim Laden der Seite
+        createGrid();
+        createTensColumn();
+        createOnesRow(); 
+        
+        // Initialzustände anwenden
+        toggleGridNumbers();
+        toggleTensDisplay();
+        toggleOnesDisplay(); 
+        updateAufgabeDisplay();
+    </script>
+</body>
+</html>
